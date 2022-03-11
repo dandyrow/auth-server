@@ -4,6 +4,9 @@ import { createConnection } from 'typeorm';
 import 'reflect-metadata';
 import express, { json, urlencoded } from 'express';
 import helmet from 'helmet';
+import authRouter from './routes/auth.route';
+import adminRouter from './routes/admin.route';
+import userRouter from './routes/user.route';
 import cookieParser from 'cookie-parser';
 import openApiSpecification from './helper/swaggerJsDoc';
 
@@ -18,6 +21,10 @@ const server = async () => {
         swaggerUi.serve,
         swaggerUi.setup(openApiSpecification),
     );
+
+    app.use('/auth', authRouter);
+    app.use('/user', userRouter);
+    app.use('/admin', adminRouter);
 
     await createConnection();
 
