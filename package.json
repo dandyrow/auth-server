@@ -4,8 +4,10 @@
    "description": "Awesome project developed with TypeORM.",
    "type": "commonjs",
    "devDependencies": {
+      "@mermaid-js/mermaid-cli": "^8.14.0",
       "@types/bcryptjs": "^2.4.2",
       "@types/cookie-parser": "^1.4.2",
+      "@types/cors": "^2.8.12",
       "@types/express": "^4.17.13",
       "@types/jsonwebtoken": "^8.5.8",
       "@types/node": "^16.11.10",
@@ -15,13 +17,18 @@
       "@typescript-eslint/eslint-plugin": "^5.12.1",
       "@typescript-eslint/parser": "^5.12.1",
       "eslint": "^8.9.0",
+      "prisma": "^3.11.0",
+      "prisma-docs-generator": "^0.5.0",
+      "prisma-erd-generator": "^0.10.1",
       "ts-node": "10.4.0",
       "ts-node-dev": "^1.1.8",
       "typescript": "4.5.2"
    },
    "dependencies": {
+      "@prisma/client": "^3.11.0",
       "bcryptjs": "^2.4.3",
       "cookie-parser": "^1.4.6",
+      "cors": "^2.8.5",
       "dotenv": "^16.0.0",
       "express": "^4.17.3",
       "helmet": "^5.0.2",
@@ -34,7 +41,7 @@
       "typeorm": "0.2.44"
    },
    "scripts": {
-      "start": "ts-node src/index.ts",
+      "start": "ts-node src/app.ts",
       "dev": "ts-node-dev --respawn --transpile-only src/app.ts",
       "typeorm": "node --require ts-node/register ./node_modules/typeorm/cli.js"
    }
