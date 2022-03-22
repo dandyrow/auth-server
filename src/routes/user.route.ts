@@ -8,8 +8,10 @@ import {
     sendRefreshToken,
 } from '../helper/tokens';
 import { getConnection } from 'typeorm';
+import { PrismaClient } from '@prisma/client';
 
 const userRouter = Router();
+const prisma = new PrismaClient();
 
 userRouter
     .post('/login', async (req: Request, res: Response, next: NextFunction) => {
@@ -21,7 +23,7 @@ userRouter
                 return;
             }
 
-            const user = await User.findOne({ where: { username } });
+            const user = await prisma.user.findUnique({ where: { username } });
             if (!user) {
                 res.sendStatus(401);
                 return;
@@ -34,9 +36,7 @@ userRouter
             }
 
             sendRefreshToken(res, createRefreshToken(user));
-            res.json({
-                accessToken: createAccessToken(user),
-            });
+            res.json({ accessToken: createAccessToken(user) });
         } catch (err) {
             next(err);
         }
@@ -55,7 +55,9 @@ userRouter
                     process.env.REFRESH_TOKEN_SECRET!,
                 ) as JwtPayload;
 
-                const user = await User.findOne({ id: payload.userId });
+                const user = await prisma.user.findUnique({
+                    where: { id: payload.userId },
+                });
                 if (!user) {
                     res.sendStatus(401);
                     return;

@@ -1,6 +1,6 @@
 import { Response } from 'express';
 import { sign } from 'jsonwebtoken';
-import { User } from '../entity/User';
+import { User } from '@prisma/client';
 
 export function createAccessToken(user: User) {
     return sign(

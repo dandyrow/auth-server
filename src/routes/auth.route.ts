@@ -1,32 +1,44 @@
+import { PrismaClient } from '@prisma/client';
 import { NextFunction, Request, Response, Router } from 'express';
-import { Authorisation } from '../entity/Authorisation';
 import { authentication } from '../middleware/authentication.middleware';
 
 const authRouter = Router();
+const prisma = new PrismaClient();
 
 authRouter
     .route('/')
     .get(async (req: Request, res: Response, next: NextFunction) => {
         try {
-            const computerId = req.query.computerId;
-            const username = req.query.username;
-            const otpSecret = req.query.otp;
+            const computerId = req.query.computerId as string;
+            const username = req.query.username as string;
+            const totp = req.query.otp;
 
-            const auth = await Authorisation.findOne({
-                where: { user: { username: username }, computerId },
-                relations: ['user'],
+            let auth = await prisma.authorisation.findFirst({
+                where: {
+                    user: { username },
+                    computer: { id: computerId },
+                },
+                include: { user: true },
             });
 
-            if (!auth || !auth.authorised) {
+            if (!auth || !auth.authenticated) {
                 res.json({
-                    authenticated: auth?.authorised,
-                    username: '',   
+                    authenticated: false,
+                    username: '',
                 });
                 return;
             }
 
-            auth.authorised = false;
-            auth.save();
+            auth = await prisma.authorisation.update({
+                where: {
+                    userId_computerId: {
+                        userId: auth.userId,
+                        computerId: auth.computerId,
+                    },
+                },
+                data: { authenticated: false },
+                include: { user: true },
+            });
 
             res.json({
                 authenticated: true,
@@ -46,24 +58,27 @@ authRouter
             return;
         }
 
-        const auth = await Authorisation.findOne({
-            where: { user: { username }, computerId },
-            relations: ['user', 'computer'],
+        const auth = await prisma.authorisation.findFirst({
+            where: {
+                user: { username },
+                computerId,
+            },
         });
 
-        if (
-            !auth ||
-            auth.user.username !== username ||
-            auth.computerId !== computerId
-        ) {
+        if (!auth) {
             res.sendStatus(401);
             return;
         }
 
-        Authorisation.update(
-            { userId: auth.userId, computerId: auth.computerId },
-            { authorised: true },
-        );
+        await prisma.authorisation.update({
+            where: {
+                userId_computerId: {
+                    userId: auth.userId,
+                    computerId: auth.computerId,
+                },
+            },
+            data: { authenticated: true },
+        });
 
         res.sendStatus(200);
     });

@@ -1,0 +1,68 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+generator docs {
+  provider = "node node_modules/prisma-docs-generator"
+}
+
+generator erd {
+  provider = "prisma-erd-generator"
+  theme    = "neutral"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                     Int             @id @default(autoincrement())
+  username               String          @unique
+  password               String
+  tokenVersion           Int             @default(1)
+  computerAuthorisations Authorisation[]
+}
+
+model Computer {
+  id              String          @id @default(uuid())
+  otpSecret       String          @unique
+  hostname        String          @unique
+  authorisedUsers Authorisation[]
+}
+
+model Authorisation {
+  user          User     @relation(fields: [userId], references: [id])
+  userId        Int
+  computer      Computer @relation(fields: [computerId], references: [id])
+  computerId    String
+  authenticated Boolean  @default(false)
+
+  @@id([userId, computerId])
+}
+
+// model authorisation {
+//   userId     Int
+//   computerId Int
+//   authorised Int      @default(0) @db.TinyInt
+//   computer   computer @relation(fields: [computerId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_d51475269a14f3aa289db2d67e7")
+//   user       user     @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_dfb09897479125a8e95bad1a2e4")
+
+//   @@id([userId, computerId])
+//   @@index([computerId], map: "FK_d51475269a14f3aa289db2d67e7")
+// }
+
+// model computer {
+//   id            Int             @id @default(autoincrement())
+//   name          String          @unique(map: "IDX_a6166a9a4d4ecfdab631451dd9") @db.VarChar(512)
+//   otpSecret     String          @db.Text
+//   authorisation authorisation[]
+// }
+
+// model user {
+//   id            Int             @id @default(autoincrement())
+//   username      String          @unique(map: "IDX_78a916df40e02a9deb1c4b75ed") @db.VarChar(512)
+//   password      String          @db.Text
+//   tokenVersion  Int             @default(0)
+//   authorisation authorisation[]
+// }

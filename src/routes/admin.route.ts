@@ -1,11 +1,10 @@
 import { Request, Response, Router, NextFunction } from 'express';
-import { Computer } from '../entity/Computer';
+import { PrismaClient } from '@prisma/client';
 import speakeasy from 'speakeasy';
-import { User } from '../entity/User';
 import { hash } from 'bcryptjs';
-import { Authorisation } from '../entity/Authorisation';
 
 const adminRouter = Router();
+const prisma = new PrismaClient();
 
 adminRouter
     .post(
@@ -17,7 +16,9 @@ adminRouter
 
                 const hashedPassword = await hash(password, 9);
 
-                await User.create({ username, password: hashedPassword }).save();
+                await prisma.user.create({
+                    data: { username, password: hashedPassword },
+                });
 
                 res.sendStatus(200);
             } catch (err) {
@@ -29,12 +30,14 @@ adminRouter
         '/addcomputer',
         async (req: Request, res: Response, next: NextFunction) => {
             try {
-                const name = req.body.computerName;
+                const hostname = req.body.computerName;
 
-                const computer = await Computer.create({
-                    name,
-                    otpSecret: speakeasy.generateSecret().base32,
-                }).save();
+                const computer = await prisma.computer.create({
+                    data: {
+                        hostname,
+                        otpSecret: speakeasy.generateSecret().base32,
+                    },
+                });
 
                 res.json(computer);
             } catch (err) {
@@ -47,17 +50,20 @@ adminRouter
         async (req: Request, res: Response, next: NextFunction) => {
             try {
                 const username = req.body.username;
-                const computername = req.body.computerName;
+                const hostname = req.body.computerName;
 
-                const user = await User.findOne({ where: { username } });
+                const user = await prisma.user.findUnique({
+                    where: { username },
+                });
+
                 if (!user) {
                     res.status(404);
                     res.send('Provided user not found');
                     return;
                 }
 
-                const computer = await Computer.findOne({
-                    where: { name: computername },
+                const computer = await prisma.computer.findUnique({
+                    where: { hostname },
                 });
                 if (!computer) {
                     res.status(404);
@@ -65,7 +71,12 @@ adminRouter
                     return;
                 }
 
-                await Authorisation.create({ userId: user.id, computerId: computer.id }).save();
+                await prisma.authorisation.create({
+                    data: {
+                        userId: user.id,
+                        computerId: computer.id,
+                    },
+                });
 
                 res.sendStatus(200);
             } catch (err) {
