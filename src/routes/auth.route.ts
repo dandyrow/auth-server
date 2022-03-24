@@ -11,25 +11,25 @@ authRouter
         try {
             const computerId = req.query.computerId as string;
             const username = req.query.username as string;
-            const totp = req.query.otp;
 
-            let auth = await prisma.authorisation.findFirst({
+            const auth = await prisma.authorisation.findFirst({
                 where: {
                     user: { username },
-                    computer: { id: computerId },
+                    computerId,
                 },
                 include: { user: true },
             });
 
+            res.json({
+                authenticated: auth?.authenticated ?? false,
+                username: auth?.user.username ?? '',
+            });
+
             if (!auth || !auth.authenticated) {
-                res.json({
-                    authenticated: false,
-                    username: '',
-                });
                 return;
             }
 
-            auth = await prisma.authorisation.update({
+            await prisma.authorisation.update({
                 where: {
                     userId_computerId: {
                         userId: auth.userId,
@@ -37,12 +37,6 @@ authRouter
                     },
                 },
                 data: { authenticated: false },
-                include: { user: true },
-            });
-
-            res.json({
-                authenticated: true,
-                username: auth.user.username,
             });
         } catch (err) {
             next(err);
@@ -51,9 +45,8 @@ authRouter
     .post(authentication, async (req: Request, res: Response) => {
         const computerId = req.body.computerId;
         const username = req.body.username;
-        const otp = req.body.otp;
 
-        if (!computerId || !username || !otp) {
+        if (!computerId || !username) {
             res.sendStatus(400);
             return;
         }
