@@ -42,38 +42,47 @@ authRouter
             next(err);
         }
     })
-    .post(authentication, async (req: Request, res: Response) => {
-        const computerId = req.body.computerId;
-        const username = req.body.username;
+    .post(authentication, async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const computerId = req.body.computerId;
+            const username = req.body.username;
+    
+            if (!computerId || !username) {
+                res.sendStatus(400);
+                return;
+            }
 
-        if (!computerId || !username) {
-            res.sendStatus(400);
-            return;
-        }
+            if (res.locals.payload.username !== username) {
+                res.sendStatus(401);
+                return;
+            }
 
-        const auth = await prisma.authorisation.findFirst({
-            where: {
-                user: { username },
-                computerId,
-            },
-        });
-
-        if (!auth) {
-            res.sendStatus(401);
-            return;
-        }
-
-        await prisma.authorisation.update({
-            where: {
-                userId_computerId: {
-                    userId: auth.userId,
-                    computerId: auth.computerId,
+            const auth = await prisma.authorisation.findFirst({
+                where: {
+                    user: { username },
+                    computerId,
                 },
-            },
-            data: { authenticated: true },
-        });
-
-        res.sendStatus(200);
+            });
+    
+            if (!auth) {
+                res.sendStatus(401);
+                return;
+            }
+    
+            await prisma.authorisation.update({
+                where: {
+                    userId_computerId: {
+                        userId: auth.userId,
+                        computerId: auth.computerId,
+                    },
+                },
+                data: { authenticated: true },
+            });
+    
+            res.sendStatus(200);
+        } catch (err) {
+            next(err);
+        }
     });
 
 export default authRouter;
